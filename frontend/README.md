@@ -1,5 +1,33 @@
-# DUA-streamliner
+# Frontend Desing
 
+## 1.1 Technology Stack
+- **Application Type:** Server-Side Rendering (SSR) Web App + Client-side interactivity
+- **Web framework:** Next.js version 15.x
+- **UI Library:** React version 19.x
+- **Language:** TypeScript 5.9.x
+- **Component Library:** Material UI 6.x
+- **Styling:** Tailwind CSS 4.x
+- **State management:** Zustand 5.x
+- **Data fetching:** TanStack Query 5.x
+- **Forms:** React Hook Form 7.x
+- **Validation:** Zod 4.x
+- **File upload:** React Dropzone 14.x
+- **Document preview:**
+    - PDF viewer: react-pdf
+    - Image preview: native browser APIs
+- **Unit testing:** Jest 30.x
+- **Component testing:** React Testing Library 15.x
+- **E2E testing:** Playwright 1.58.x
+- **Authentication:** OAuth 2.0 / OpenID Connect
+    - Library: NextAuth.js 5.x
+- **Linter:** ESLint 10.x
+- **Formatter:** Prettier 3.x
+- **Git hooks:** Husky 9.x
+- **Cloud provider:** Microsoft Azure
+- **Frontend hosting:** Azure App Service
+- **CI/CD:** Azure DevOps Pipelines
+- **Environments:** development / staging / production
+- **Monitoring:** Azure Application Insights
 
 ## 1.2 UX UI analysis
 
@@ -66,3 +94,16 @@ The system loads the user's recent operations and prepares the environment to be
 
 /heatmap
 ![url-heapmap](/media/heatmap.jpg)
+
+
+
+
+
+
+## 1.3 Component Design Strategy
+
+## 1.4 Security
+
+## 1.5 Layered Design
+
+## 1.6 Design Patterns
