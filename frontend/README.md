@@ -33,52 +33,67 @@
 
 ### Core Business Process
 
-#### Login
-1. User Login with username, password and oneTimeToken 
-2. The system validates the user's credentials and enables access to the main work environment.
-The system loads the user's recent operations and prepares the environment to begin a new customs declaration (DUA) generation process.
+#### 1. User Authentication
+- The user enters their username and password on the login screen.
+- The system validates the credentials and grants access to the main dashboard upon successful authentication.
+- If authentication fails, the system displays an error message.
 
-![Login_wireframe_early](/media/login_wireframe_early.png)
+#### 2. Action Selection
+- The user initiates a new DUA generation process by clicking the “Generate DUA” button.
+- The system navigates to the document input interface.
 
-#### Generator Configuration
-1. The user initiates a new DUA generation operation.
-2. The system creates an internal record of the new customs operation and prepares the document processing workflow. The system prompts the user to specify the location of the documents that will be used as the source of information.
+#### 3. Document Source Selection
+- The user selects or uploads a folder containing the required documents.
+- The system validates the folder contents and checks for supported file formats.
 
-#### Select File Path
-1. The user indicates the path to the folder containing the documents related to the customs operation.
-2. The system accesses the specified folder and analyzes its contents. The system identifies all available files and determines which ones are compatible with the processing. The system registers the documents associated with the operation and prepares the process for reading each one.
+#### 4. Document Processing
+- The user starts the document processing operation.
+- The system performs:
+    - Reading structured files (Excel and Word).
+    - Extracting text from PDF documents.
+    - Optical Character Recognition (OCR) on scanned images.
+- The system displays a processing status indicator (e.g., progress bar or loading state)
 
-#### Document processing
-1. The user initiates the automatic processing of the detected documents.
-2. The system executes a sequence of internal processes:
-- Reading structured files (Excel and Word)
-- Extracting text from PDF documents
-- Optical character recognition (OCR) of scanned images
+#### 5. Preliminary DUA Generation
+- The system generates a preliminary DUA document using the extracted data.
+- The document is displayed with visual confidence indicators:
+    - Green: High confidence
+    - Yellow: Medium confidence
+    - Red: Requires review
 
-#### Preliminary generation of the DUA
-1. The user requests the generation of the DUA document with the extracted information.
-2. The system takes all the identified data and assigns it to the corresponding positions in the official DUA template.
+#### 6. Review and Correction
+- The user reviews the generated DUA fields.
+- The user can manually edit incorrect or incomplete information.
+- The system may highlight inconsistencies or missing required fields.
 
-#### Review of the extracted information
-1. The user reviews each field of the generated document.
+#### 7. Final DUA Generation
+- The user confirms the final generation of the DUA.
+- The system validates all required fields before proceeding.
+- The system generates the final document using the official template.
 
-#### Information correction
-1. The user manually modifies the values ​​that they consider incorrect or incomplete.
+#### 8. Document Export
+- The user requests to download the generated document.
+- The system provides available download options (e.g., Word format).
+- The document is downloaded to the user’s device
 
-#### Generation of the final document
-1. The user confirms that they wish to generate the final DUA document.
-2. The system produces the final document in Word format using the official template.
-
-#### Exporting document
-1. The user requests to download the generated document.
-2. The system delivers the DUA file ready to be reviewed externally or used in the customs declaration process.
-
-#### Logout
-1. The user completes the DUA generation operation.
+#### 9. Session Continuation or Logout
+- The user may:
+    - Start a new DUA generation process, or
+    - Log out of the system.
 
 
 ### Wireframes
-![Early_Wireframes](/media/wireframes_early.png)
+#### Login
+![Login Page](./media/login_page.png)
+
+#### Main Page
+![Dashboard](./media/dashboard_page.png)
+
+#### Select Folder
+![Select Folder](./media/selectfolder_page.png)
+
+#### Document Preview
+![Document Preview](./media/DUApreview_page.png)
 
 ### UX Test Results
 - Escoger alguna app para ejecutar el ux test usando esos wireframes
@@ -98,11 +113,75 @@ The system loads the user's recent operations and prepares the environment to be
 
 
 
-
-
 ## 1.3 Component Design Strategy
 
+### Design Approach
+The frontend component design follows the Atomic Design methodology, enabling the construction of complex interfaces from small, reusable building blocks.
+
+- Atoms: Basic UI elements (buttons, inputs, labels, icons)
+- Molecules: Groups of atoms (form fields, input groups, file selectors)
+- Organisms: Complex UI sections (navigation sidebar, document preview panel, DUA form sections)
+- Templates / Pages: Full layouts (dashboard, document processing flow, DUA preview page)
+
+### Component Reusability Strategy
+- Component modularization using React functional components
+Separation of:
+    - UI logic (presentation components)
+    - Business logic (custom hooks)
+- Creation of shared components, such as: Buttons, Input fields, Status indicators, File upload components.
+- Use of props and composition patterns to make components flexible and configurable
+
+### State and Logic Encapsulation
+- Local UI state is handled with Zustand
+- Server state and asynchronous data are handled with TanStack Query
+- Custom hooks are used to encapsulate logic (e.g., useDUAProcessing, useFileUpload)
+
+### Styling Strategy and Centralization
+- Component-level styling:
+    - Each component has its own styling file or configuration
+- Technologies used:
+    - Material UI for base components and design system
+    - Tailwind CSS for layout and spacing utilities
+- Styling rules:
+    - Material UI → UI components (buttons, inputs, dialogs)
+    - Tailwind → layout (grid, spacing, responsiveness)
+- Naming conventions:
+    - CSS class pattern: ComponentName-element-modifier
+- Use of theme configuration (MUI Theme) to centralize:
+    - Colors (including confidence indicators)
+    - Typography
+    - Spacing scale
+
+### Internationalization (i18n)
+- Language switching is not supported for this project
+
+### Responsiveness Strategy
+- Tailwind CSS responsive utilities (breakpoints)
+- Material UI responsive components and grid system
+
+- Design principles:
+
+    - Mobile-first approach
+    - Flexible layouts using: flex, grid.
+- Units: Relative units (rem, %) instead of fixed pixels
+- Key UI adaptations:
+    - Sidebar collapses on small screens
+    - Document preview switches from split view to stacked layout
+    - Tables become scrollable
+
+### Accessibility Considerations
+- Accessibility is not taken into account in this project.
+
 ## 1.4 Security
+
+### Authentication Strategy
+- Authentication is handled using:
+    - NextAuth.js (v5.x) integrated with Next.js App Router
+    - Identity provider: Microsoft Azure via Azure Entra ID (formerly Azure Active Directory)
+- Supported mechanisms:
+    - Single Sign-On (SSO) via Azure Entra ID
+    - OAuth 2.0 / OpenID Connect (OIDC) flows
+    - Multi-Factor Authentication (MFA) enforced by Azure Entra ID
 
 ## 1.5 Layered Design
 
