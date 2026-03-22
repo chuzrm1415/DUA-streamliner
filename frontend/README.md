@@ -183,6 +183,128 @@ Separation of:
     - OAuth 2.0 / OpenID Connect (OIDC) flows
     - Multi-Factor Authentication (MFA) enforced by Azure Entra ID
 
+### Session Management
+- Session handling is managed by NextAuth.js using:
+    - JWT-based sessions
+    - Secure HTTP-only cookies
+- Cookies configured with:
+    - HttpOnly
+    - Secure
+    - SameSite=Strict
+- Session expiration and refresh handled automatically
+
+### Authorization Strategy (RBAC)
+
+Authorization is implemented using a Role-Based Access Control (RBAC) model.
+
+- Defined Roles
+    - Manager
+    - Customs Agent
+- Permissions by Role
+    - **Manager:**
+        - Permission Code: `MANAGE_USERS`
+            - Description: Manage user accounts (CRUD operations)
+        - Permission Code: `VIEW_REPORTS`
+            - Description: Access operational and system reports
+        - Permission Code: `EDIT_TEMPLATES`
+            - Description: Modify DUA templates and system configurations
+    - **Customs Agent**
+        - Permission Code: `UPLOAD_FILES`
+            - Description: Upload and manage document folders
+        - Permission Code: `PROCESS_DOCUMENTS`
+            - Description: Trigger document processing and AI extraction
+        - Permission Code: `REVIEW_DUA`
+            - Description: Review and edit generated DUA data
+        - Permission Code: `GENERATE_FINAL_DUA`
+            - Description: Confirm and generate final DUA document
+        - Permission Code: `DOWNLOAD_DUA`
+            - Description: Download generated DUA files
+
+### Secure Storage of Secrets
+Sensitive configuration and secrets are managed using:
+- Microsoft Azure Key Vault
+
+Stored data includes:
+- API keys
+- Environment variables
+- Authentication secrets
+- External service credentials
+
+### Frontend Security Best Practices
+The frontend implements the following protections:
+- Input validation using Zod
+- Sanitization of user inputs to prevent injection attacks
+- CSRF protection via NextAuth built-in mechanisms
+- Secure API communication over HTTPS only
+- Content Security Policy (CSP) headers (configured in Next.js)
+
+### File Upload Security
+ImplementsSince the system handles document uploads:
+- File type validation (PDF, DOCX, XLSX, images only)
+- File size limits enforced
+- Files are not executed, only processed
+- Server-side validation required before processing
+
+### Project Structure (Security Components Location)
+```
+/src
+ ├── /auth
+ │    ├── auth.config.ts        # NextAuth configuration
+ │    ├── auth.provider.tsx     # Session provider
+ │
+ ├── /hooks
+ │    ├── useAuth.ts
+ │    ├── usePermissions.ts
+ │
+ ├── /middleware
+ │    ├── authMiddleware.ts     # Route protection
+ │
+ ├── /lib
+ │    ├── permissions.ts        # Role & permission definitions
+ │
+ ├── /services
+ │    ├── authService.ts        # Authentication logic abstraction
+ ```
+
+ ### Project Structure (Security Components Location)
+
+```mermaid
+graph TD
+    src["/src"]
+    src --> auth["/auth"]
+    auth --> auth_config["auth.config.ts<br/>(NextAuth config)"]
+    auth --> auth_provider["auth.provider.tsx<br/>(Session provider)"]
+    
+    src --> hooks["/hooks"]
+    hooks --> useAuth["useAuth.ts"]
+    hooks --> usePerms["usePermissions.ts"]
+    
+    src --> middleware["/middleware"]
+    middleware --> authMid["authMiddleware.ts<br/>(Route protection)"]
+    
+    src --> lib["/lib"]
+    lib --> perms["permissions.ts<br/>(Role & permissions)"]
+    
+    src --> services["/services"]
+    services --> authServ["authService.ts<br/>(Auth logic)"]
+```
+
+### Project Structure (Security Components Location)
+
+- `/src`
+  - `/auth`
+    - `auth.config.ts` - NextAuth configuration
+    - `auth.provider.tsx` - Session provider
+  - `/hooks`
+    - `useAuth.ts`
+    - `usePermissions.ts`
+  - `/middleware`
+    - `authMiddleware.ts` - Route protection
+  - `/lib`
+    - `permissions.ts` - Role & permission definitions
+  - `/services`
+    - `authService.ts` - Authentication logic abstraction
+    
 ## 1.5 Layered Design
 
 ## 1.6 Design Patterns
