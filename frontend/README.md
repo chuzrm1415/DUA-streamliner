@@ -96,21 +96,6 @@
 ![Document Preview](./media/DUApreview_page.png)
 
 ### UX Test Results
-- Escoger alguna app para ejecutar el ux test usando esos wireframes
-- El test se lo van a aplicar de forma remota compartiendo un url a 3 estudiantes o amigos 
-- Eso va a generar un reporte de resultados 
-
-- crear un markdown table con los resultados
-- Evidencias
-
-![Persona1](/media/per1.jpg)
-![Persona2](/media/per2.jpg)
-![Persona3](/media/per3.jpg)
-
-/heatmap
-![url-heapmap](/media/heatmap.jpg)
-
-
 
 
 ## 1.3 Component Design Strategy
@@ -266,45 +251,112 @@ ImplementsSince the system handles document uploads:
  │    ├── authService.ts        # Authentication logic abstraction
  ```
 
- ### Project Structure (Security Components Location)
 
-```mermaid
-graph TD
-    src["/src"]
-    src --> auth["/auth"]
-    auth --> auth_config["auth.config.ts<br/>(NextAuth config)"]
-    auth --> auth_provider["auth.provider.tsx<br/>(Session provider)"]
-    
-    src --> hooks["/hooks"]
-    hooks --> useAuth["useAuth.ts"]
-    hooks --> usePerms["usePermissions.ts"]
-    
-    src --> middleware["/middleware"]
-    middleware --> authMid["authMiddleware.ts<br/>(Route protection)"]
-    
-    src --> lib["/lib"]
-    lib --> perms["permissions.ts<br/>(Role & permissions)"]
-    
-    src --> services["/services"]
-    services --> authServ["authService.ts<br/>(Auth logic)"]
-```
-
-### Project Structure (Security Components Location)
-
-- `/src`
-  - `/auth`
-    - `auth.config.ts` - NextAuth configuration
-    - `auth.provider.tsx` - Session provider
-  - `/hooks`
-    - `useAuth.ts`
-    - `usePermissions.ts`
-  - `/middleware`
-    - `authMiddleware.ts` - Route protection
-  - `/lib`
-    - `permissions.ts` - Role & permission definitions
-  - `/services`
-    - `authService.ts` - Authentication logic abstraction
-    
 ## 1.5 Layered Design
 
+![Layered Desing Diagram](./media/layered_desing_diagram.png)
+
+### Rendering Layer (SSR + Client-Side Rendering)
+- Server-Side Rendering (SSR) for initial page load
+- Client-side rendering for interactive components
+
+Flow:
+
+- When a user accesses the application:
+    - The server renders the initial view
+    - Client-side hydration enables interactivity
+
+- If no authenticated session is detected:
+    - The request is redirected to the Authentication Layer
+
+### Authentication Layer
+Responsibilities:
+- Validate user session on each request
+- Handle login via Azure Entra ID (SSO + MFA)
+- Protect routes using middleware
+
+If authentication is successful:
+- The user is allowed to access protected resources
+- The request proceeds to the Components Layer
+
+### Components Layer (UI Layer)
+This layer is responsible for rendering the user interface.
+- Built using React components
+- Structured using Atomic Design methodology:
+
+Responsibilities:
+- Render UI elements
+- Display DUA preview with confidence indicators
+- Handle user interactions
+
+### Hooks Layer (Logic Binding Layer)
+Implemented using custom React hooks
+
+Examples:
+- `useAuth()` → session and user data
+- `useDUAProcessing()` → handles document processing flow
+- `useFileUpload()` → manages file selection and upload
+
+Responsibilities:
+- Encapsulate reusable logic
+- Manage interaction between UI and services
+- Keep components clean and declarative
+
+### State Management Layer
+State is divided into:
+- Client State:
+    - Managed with Zustand
+    - Stores: UI state, Temporary user interactions
+
+- Server State:
+    - Managed with TanStack Query
+    - Handles: API data fetching, Caching, Background updates
+
+### Services Layer (Business Logic Layer)
+Responsibilities:
+- Orchestrate frontend operations such as:
+    - Triggering document processing
+    - Requesting DUA generation
+    - Handling validation workflows
+    - Abstract API calls from UI logic
+
+### API Clients Layer
+Responsibilities:
+- Execute HTTP requests to backend APIs
+- Handle request/response transformations
+- Manage error handling
+
+### Settings / Configuration Layer
+Responsibilities:
+- Access environment variables (via Next.js runtime)
+- Retrieve API endpoints and configuration values
+
+Sensitive data is stored in:
+- Microsoft Azure Key Vault
+
+### Utils Layer
+Responsibilities:
+- Data formatting (dates, currency, numbers)
+- Validation helpers
+- File processing helpers
+
+
 ## 1.6 Design Patterns
+
+### Strategy Pattern – Document Processing
+Is used to define multiple document processing algorithms and select the appropriate one at runtime based on file type.
+
+### Adapter Pattern – DUA Document Output Formatting
+Is used to transform extracted data into the structure required by the final DUA document format (Word template).
+- Each adapter converts raw data into a specific representation:
+    - Paragraphs
+    - Tables
+    - Labels
+    - Monetary values
+
+### Observer Pattern – UI Updates & Processing Status
+The Observer Pattern allows different parts of the application to react automatically to state changes.
+
+- Implemented using:
+    - Zustand
+    - TanStack Query
