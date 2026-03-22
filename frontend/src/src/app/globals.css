@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Global baseline resets that don't conflict with MUI */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
