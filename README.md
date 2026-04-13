@@ -1,4 +1,55 @@
-# 1. Frontend Desing
+## 📄 DUA Streamliner
+
+DUA Streamliner is a full-stack system designed to automate the generation of the *Documento Único Aduanero (DUA)*, the official customs declaration document used in Costa Rica.
+
+The system enables users to upload a folder containing heterogeneous documents such as PDFs, Word files, Excel spreadsheets, and scanned images. Through a combination of multi-format parsing, OCR, and AI-powered semantic extraction, the platform interprets relevant customs information and maps it into the official DUA structure.
+
+The backend processes documents asynchronously using a queue-based architecture, ensuring scalability and resilience for long-running tasks. Extracted data is validated and transformed into a pre-filled DUA document in Word format, including visual confidence indicators to assist users during review.
+
+Rather than replacing customs experts, DUA Streamliner enhances their workflow by reducing manual data entry and enabling them to focus on validation and decision-making.
+
+### Key Features
+
+- Multi-format document ingestion (PDF, DOCX, XLSX, images)
+- OCR for scanned documents
+- AI-based semantic data extraction
+- Automated mapping to official DUA template
+- Asynchronous processing with real-time status tracking
+- Editable preview with confidence indicators
+- Secure authentication via Azure Entra ID
+
+### Architecture Overview
+
+The system follows a **Modular Monolith + Asynchronous Processing** architecture:
+
+- Frontend: Next.js (SSR + CSR)
+- Backend: NestJS (REST API + workers)
+- Queue: Redis + BullMQ
+- Database: PostgreSQL
+- Storage: Azure Blob Storage
+
+
+# Table of Contents
+
+- [1. Frontend Design](#1-frontend-design)
+  - [1.1 Technology Stack](#11-technology-stack)
+  - [1.2 UX UI analysis](#12-ux-ui-analysis)
+  - [1.3 Component Design Strategy](#13-component-design-strategy)
+  - [1.4 Security](#14-security)
+  - [1.5 Layered Design](#15-layered-design)
+  - [1.6 Design Patterns](#16-design-patterns)
+- [2. Backend Design](#2-backend-design)
+  - [2.1 Technology Stack](#21-technology-stack)
+  - [2.2 Security](#22-security)
+  - [2.3 Observability](#23-observability)
+  - [2.4 Infrastructure](#24-infrastructure)
+  - [2.5 Availability](#25-availability)
+  - [2.6 Scalability](#26-scalability)
+  - [2.7 Backend Key Workflows](#27-backend-key-workflows)
+  - [2.8 Architecture diagrams in layers](#28-architecture-diagrams-in-layers)
+  - [2.9 Design Considerations](#29-design-considerations)
+
+# 1. Frontend Design
 
 ## 1.1 Technology Stack
 - **Application Type:** Server-Side Rendering (SSR) Web App + Client-side interactivity
@@ -84,16 +135,16 @@
 
 ### Wireframes
 #### Login
-![Login Page](./media/login_page.png)
+![Login Page](./media/wireframes/login_page.png)
 
 #### Main Page
-![Dashboard](./media/dashboard_page.png)
+![Dashboard](./media/wireframes/dashboard_page.png)
 
 #### Select Folder
-![Select Folder](./media/selectfolder_page.png)
+![Select Folder](./media/wireframes/selectfolder_page.png)
 
 #### Document Preview
-![Document Preview](./media/DUApreview_page.png)
+![Document Preview](./media/wireframes/DUApreview_page.png)
 
 ### UX Test Results
 
@@ -254,7 +305,7 @@ ImplementsSince the system handles document uploads:
 
 ## 1.5 Layered Design
 
-![Layered Desing Diagram](./media/layered_desing_diagram.png)
+![Layered Desing Diagram](./media/diagrams/layered_desing_diagram.png)
 
 ### Rendering Layer (SSR + Client-Side Rendering)
 - Server-Side Rendering (SSR) for initial page load
@@ -899,3 +950,263 @@ As the number of requests per minute increases, the following architectural comp
     - Automatically scales (managed service)
 - Handles:
     - Increased number of uploaded and generated files
+
+## 2.7 Backend Key Workflows
+
+This section describes the core system workflows, focusing on how the backend processes requests, orchestrates asynchronous tasks, and produces results.
+
+### DUA Generation Workflow (Main Workflow)
+
+This is the primary business workflow, executed asynchronously through the processing pipeline.
+
+#### Flow
+1. **Request Initialization**
+    - The user uploads a folder via the frontend.
+    - The API validates:
+        - File types
+        - Payload size
+        - User permissions
+2. **Job Creation**
+    - A new processing job is created in the database:
+        - Status: PENDING
+    - A job is enqueued using:
+        - BullMQ
+3. **Asynchronous Processing (Worker)**
+    - The worker consumes the job and executes the pipeline:
+    1. **Document Parsing**
+        - Extract content from:
+            - PDF, DOCX, XLSX
+        - Normalize text into a common format
+    2. **OCR Processing**
+        - For images / scanned documents:
+            - Use Tesseract.js
+        - Extract text from images
+    3. **AI Semantic Extraction**
+        - Send processed text to AI service
+        - Extract:
+            - Supplier data
+            - Product details
+            - Values, dates, incoterms, etc.
+    4. **Data Structuring**
+        - Convert extracted data into internal domain model
+        - Assign confidence levels per field
+    5. **DUA Mapping**
+        - Map structured data to official DUA template
+        - Apply validation rules:
+            - Totals
+            - Required fields
+            - Data consistency
+    6. **Document Generation**
+        - Generate final .docx using:
+            - docx
+        - Apply visual indicators:
+            - Green / Yellow / Red
+4. **Result Storage**
+    - Store:
+        - Generated document (Blob Storage)
+        - Extracted structured data (Database)
+    - Update job status:
+        `COMPLETED` or `FAILED`
+5. **Frontend Polling / Status Retrieval**
+    - Frontend queries job status endpoint
+    - Receives:
+        - Current status
+        - Progress (optional)
+        - Result when available
+
+### Job Status Workflow
+Handles tracking of asynchronous processes.
+
+#### Flow
+1. Frontend sends request with jobId
+2. API retrieves job from database
+3. Returns:
+    - Status (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`)
+    - Metadata (timestamps, errors if any)
+
+### DUA Review & Update Workflow
+Allows users to correct extracted data.
+
+#### Flow
+1. User edits fields in frontend
+2. Updated data is sent to API
+3. Backend:
+    - Validates input (Zod)
+    - Updates stored structured data
+4. Marks fields as:
+    - User-validated (high confidence)
+
+### Final DUA Generation Workflow
+Triggered after user review.
+
+#### Flow
+1. User confirms final generation
+2. Backend:
+    - Re-validates required fields
+    - Regenerates .docx document
+3. Stores final version
+4. Updates job status:
+    - `FINALIZED`
+
+### Document Download Workflow
+#### Flow
+1. User requests download
+2. Backend:
+    - Validates permissions
+    - Generates secure access URL (or streams file)
+3. File is returned to user
+
+### Error Handling Workflow
+#### Flow
+1. Error occurs in any processing stage
+2. System:
+    - Logs error (observability layer)
+    - Updates job status → `FAILED`
+    - Stores error details
+3. Retry mechanism:
+    - Automatic retry (queue-based)
+4. If persistent:
+    - User is notified for manual correction
+
+## 2.8 Architecture diagrams in layers
+
+### Context Diagram
+
+![Context Diagram](./media/diagrams/contextDiagram.png)
+
+### Container Diagram
+
+![Container Diagram](./media/diagrams/containerDiagram.png)
+
+### Code Diagram
+
+![Code Diagram](./media/diagrams/codeDiagram.png)
+
+## 2.9 Design Considerations
+
+### System Configuration & Parameters
+
+All system configurations and operational parameters are:
+- Defined and versioned within the source code
+- Managed via environment variables and configuration modules
+
+#### Key Configurations:
+- API base URLs
+- Queue settings (concurrency, retry attempts, backoff strategy)
+- File size limits and supported formats
+- Rate limiting thresholds
+- AI service parameters (timeout, retry policy)
+- Feature flags (optional)
+
+#### Implementation:
+- Centralized configuration using NestJS Config Module
+- Sensitive values stored in Azure Key Vault
+
+### Resource Allocation
+System resources are allocated based on workload characteristics:
+
+#### API Layer:
+- Moderate CPU and memory usage
+- Scales horizontally via container replicas
+
+#### Worker Layer:
+- High CPU usage (OCR, parsing, AI processing)
+- Configured with:
+    - Higher memory allocation
+    - Controlled concurrency per worker
+
+#### Queue System:
+- Technology: Redis
+- Configured with:
+    - Persistence enabled
+    - Memory optimized for job buffering
+
+#### Database:
+- Technology: PostgreSQL
+- Tuned for:
+    - Transaction reliability
+    - Indexed queries for job/status retrieval
+
+#### Load Balancing & Networking:
+- Managed by Azure infrastructure
+- Internal communication secured via HTTPS
+- External endpoints exposed via secure gateways
+
+### Algorithm Selection
+
+Core business logic relies on specific algorithms and processing strategies:
+
+#### Document Processing:
+- Strategy Pattern:
+    - Selects parsing algorithm based on file type (PDF, DOCX, XLSX)
+
+#### OCR Processing:
+- Image-to-text extraction using Tesseract.js
+- Applied only when required (conditional execution)
+
+#### AI Semantic Extraction:
+- Context-based extraction via AI models
+- Parameters:
+    - Temperature: low (high determinism)
+    - Structured prompt templates
+
+#### Data Mapping:
+- Adapter Pattern:
+    - Transforms extracted data into DUA schema
+
+#### Job Processing:
+- Queue-based processing with:
+    - Retry algorithm (exponential backoff)
+    - Idempotent job execution
+
+### Agent Prototypes
+
+The system defines logical “agents” responsible for specific responsibilities:
+
+#### API Agent:
+- Handles user requests
+- Performs validation and orchestration
+
+#### Processing Agent (Worker):
+- Executes the document processing pipeline:
+    - Parsing
+    - OCR
+    - AI extraction
+    - Mapping
+    - Document generation
+
+#### Storage Agent:
+- Manages interaction with:
+    - File storage (Blob)
+    - Database persistence
+
+#### AI Integration Agent:
+- Encapsulates communication with external AI services
+- Handles:
+    - Request formatting
+    - Response parsing
+    - Error handling
+
+### Interfaces & Integration Points
+
+The system defines clear interfaces for internal and external communication:
+
+#### Internal Interfaces:
+- Service-to-service communication via method contracts
+- Queue interface for async job handling (BullMQ)
+
+#### External Integrations:
+- Authentication:
+    - Azure Entra ID (OAuth2 / OIDC)
+
+#### AI Services:
+- External AI API for semantic extraction
+- Communication via HTTPS REST APIs
+
+#### File Storage:
+- Azure Blob Storage
+- Access via SDK and secure endpoints
+
+#### Proxies & Abstractions:
+- API client layer abstracts external services
+- Adapters standardize data formats across components
